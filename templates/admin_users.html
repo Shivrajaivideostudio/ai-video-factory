@@ -1,1 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - AI Video Factory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #020617; color: #e2e8f0; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">User Management</h1>
+            <a href="/dashboard" class="text-blue-400 hover:underline">← Back to Dashboard</a>
+        </div>
 
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- User List -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="glass-card rounded-3xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-xs uppercase text-gray-400">
+                            <tr>
+                                <th class="p-4">User Identifier</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for uid, data in users.items() %}
+                            <tr>
+                                <td class="p-4">
+                                    <div class="font-medium">{{ uid }}</div>
+                                    {% if data.is_owner %}<span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Owner</span>{% endif %}
+                                </td>
+                                <td class="p-4">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold
+                                        {% if data.status == 'approved' %}bg-green-500/20 text-green-400
+                                        {% elif data.status == 'pending' %}bg-yellow-500/20 text-yellow-400
+                                        {% elif data.status == 'blocked' %}bg-red-500/20 text-red-400
+                                        {% else %}bg-gray-500 text-white{% endif %}">
+                                        {{ data.status.upper() }}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-right space-x-2">
+                                    <form action="/api/admin/update-user" method="POST" class="inline">
+                                        <input type="hidden" name="identifier" value="{{ uid }}">
+                                        {% if data.status == 'pending' %}
+                                            <button name="action" value="approve" class="text-green-500 hover:bg-green-500/10 p-2 rounded">Approve</button>
+                                        {% endif %}
+                                        
+                                        {% if data.status == 'approved' %}
+                                            <button name="action" value="block" class="text-yellow-500 hover:bg-yellow-500/10 p-2 rounded">Block</button>
+                                        {% elif data.status == 'blocked' %}
+                                            <button name="action" value="unblock" class="text-green-500 hover:bg-green-500/10 p-2 rounded">Unblock</button>
+                                        {% endif %}
+
+                                        <button name="action" value="blacklist" class="text-red-500 hover:bg-red-500/10 p-2 rounded" title="Blacklist">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-list-ul text-blue-400"></i> Activity Log
+                </h3>
+                <div class="space-y-3 text-sm">
+                    {% for log in logs %}
+                    <div class="p-3 bg-white/5 rounded-xl border border-white/5">
+                        {{ log }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
