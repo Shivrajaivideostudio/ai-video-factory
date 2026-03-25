@@ -13,7 +13,7 @@ from typing import Optional, List
 from pathlib import Path
 
 from jose import jwt
-import google.generativeai as genai
+import google-genai as genai
 from openai import OpenAI
 from groq import Groq
 from dotenv import load_dotenv
