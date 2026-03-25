@@ -4,7 +4,7 @@ jinja2
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
-google-genai
+google.generativeai
 openai
 groq
 python-dotenv
