@@ -157,9 +157,11 @@ class CreativeEngine:
         }}
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-pro')
-            response = model.generate_content(prompt)
-            content = response.text.strip()
+            response = gemini_client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents=prompt
+)
+content = response.text.strip() if response.text else "{}"
             # Robust JSON cleaning
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
