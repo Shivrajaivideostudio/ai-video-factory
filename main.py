@@ -783,10 +783,3 @@ async def logout():
     response = RedirectResponse(url="/login")
     response.delete_cookie("access_token")
     return response
-
-
-if __name__ == "__main__":
-    import uvicorn
-    # Railway ke liye port dynamic hona chahiye
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
