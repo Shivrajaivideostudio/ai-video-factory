@@ -51,18 +51,15 @@ ACCESS_TOKEN_EXPIRE_HOURS = 24
 OWNER_EMAILS = [e.strip() for e in os.getenv("OWNER_EMAILS", "").split(",") if e.strip()]
 OWNER_MOBILES = [m.strip() for m in os.getenv("OWNER_MOBILES", "").split(",") if m.strip()]
 
-# AI Clients Initialization (Corrected)
+# AI Clients Initialization
 try:
-    # Correct way to initialize 'google-genai' library
     gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    
-    # Other clients remain the same
     openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     logger.info("AI clients initialized successfully.")
 except Exception as e:
     logger.error(f"Failed to initialize AI clients: {e}")
-    raise # Stop the app if keys are missing or invalid
+    raise
 
 # Directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -128,7 +125,7 @@ async def get_current_active_user(current_user: dict = Depends(get_current_user)
 # --- AI Engine Modules ---
 
 class CreativeEngine:
-    """Role: Gemini - The Scriptwriter (Corrected)"""
+    """Role: Gemini - The Scriptwriter"""
     @staticmethod
     async def generate_script(topic: str, language: str, style: str):
         logger.info(f"Generating script for topic: {topic}")
@@ -150,11 +147,10 @@ class CreativeEngine:
         }}
         """
         try:
-            # Correct way to call the synchronous 'google-genai' library in an async function
             response_text = await asyncio.to_thread(
                 gemini_client.generate_text,
                 prompt=prompt,
-                model="models/gemini-1.5-pro-latest" # Using full model name
+                model="models/gemini-1.5-pro-latest"
             )
             json_text = response_text.strip().replace("```json", "").replace("```", "").strip()
             return json.loads(json_text)
@@ -166,7 +162,7 @@ class CreativeEngine:
 class NarrationEngine:
     """Role: Edge-TTS - The Voice"""
     @staticmethod
-async def generate_audio(text: str, output_path: Path, voice: str = "en-US-JasonNeural"):
+    async def generate_audio(text: str, output_path: Path, voice: str = "en-US-JasonNeural"):
         logger.info(f"Generating audio for text, saving to {output_path}")
         communicate = edge_tts.Communicate(text, voice)
         await communicate.save(str(output_path))
@@ -325,4 +321,4 @@ async def get_status(task_id: str, user: dict = Depends(get_current_active_user)
 @app.get("/logout")
 async def logout(response: Response):
     response.delete_cookie("access_token")
-    return RedirectResponse(url="/", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    return RedirectResponse(url="/", status_code
