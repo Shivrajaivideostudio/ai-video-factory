@@ -14,7 +14,7 @@ from google import genai
 from openai import OpenAI
 from groq import Groq
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status, BackgroundTasks
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status, BackgroundTasks, Response
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -51,21 +51,18 @@ ACCESS_TOKEN_EXPIRE_HOURS = 24
 OWNER_EMAILS = [e.strip() for e in os.getenv("OWNER_EMAILS", "").split(",") if e.strip()]
 OWNER_MOBILES = [m.strip() for m in os.getenv("OWNER_MOBILES", "").split(",") if m.strip()]
 
-# AI Clients Initialization
+# AI Clients Initialization (Corrected)
 try:
-    # Gemini for creative scriptwriting
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    gemini_client = genai.GenerativeModel('gemini-1.5-pro-latest')
+    # Correct way to initialize 'google-genai' library
+    gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     
-    # OpenAI for orchestration and other tasks
+    # Other clients remain the same
     openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
-    # Groq for fast responses (optional, can be used for chat)
     groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    logger.info("AI clients initialized successfully.")
 except Exception as e:
     logger.error(f"Failed to initialize AI clients: {e}")
-    # You might want to handle this more gracefully
-    # For now, we'll let it raise an error if keys are missing.
+    raise # Stop the app if keys are missing or invalid
 
 # Directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -76,11 +73,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # --- Mock Database & In-Memory State ---
-# WARNING: This is not persistent. Data will be lost on server restart.
-# For production, use a real database like SQLite, PostgreSQL, or a JSON file.
 user_db = {}
 otp_db = {}
-generation_status = {} # Tracks status of background video generation tasks
+generation_status = {}
 
 # Initialize Owners from .env
 for email in OWNER_EMAILS:
@@ -105,22 +100,21 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 async def get_current_user(request: Request):
     token = request.cookies.get("access_token")
     if not token:
-        return None # No token, not logged in
+        return None
     
     try:
-        # The token includes "Bearer ", so we split it
         payload = jwt.decode(token.split(" ")[1], SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None or user_id not in user_db:
-            return None # User not found
+            return None
         
         user = user_db[user_id]
         if user["status"] != "approved":
-            return None # User not approved
+            return None
             
         return {"id": user_id, **user}
     except JWTError:
-        return None # Token is invalid
+        return None
 
 async def get_current_active_user(current_user: dict = Depends(get_current_user)):
     if not current_user:
@@ -134,7 +128,7 @@ async def get_current_active_user(current_user: dict = Depends(get_current_user)
 # --- AI Engine Modules ---
 
 class CreativeEngine:
-    """Role: Gemini 1.5 Pro - The Scriptwriter"""
+    """Role: Gemini - The Scriptwriter (Corrected)"""
     @staticmethod
     async def generate_script(topic: str, language: str, style: str):
         logger.info(f"Generating script for topic: {topic}")
@@ -142,9 +136,7 @@ class CreativeEngine:
         You are a world-class viral video scriptwriter.
         Generate a complete video production package for a YouTube Short on the topic: '{topic}'.
         The video should be in {language} and have a {style} style.
-
         Your response MUST be a single, valid JSON object. Do not include any text before or after the JSON.
-
         The JSON structure must be exactly as follows:
         {{
             "title": "A short, catchy, SEO-optimized title (under 70 characters).",
@@ -152,29 +144,19 @@ class CreativeEngine:
             "tags": ["list", "of", "5", "to", "10", "relevant", "tags"],
             "thumbnail_prompt": "A detailed, vivid prompt for an AI image generator to create a clickable thumbnail for this video.",
             "script": [
-                {{
-                    "scene": 1,
-                    "narration": "The first sentence of the script. This should be a strong hook.",
-                    "visual_idea": "A brief description of the visual content for this scene (e.g., 'A person looking shocked at a computer screen')."
-                }},
-                {{
-                    "scene": 2,
-                    "narration": "The second part of the script.",
-                    "visual_idea": "Description of the visuals for the second scene."
-                }},
-                {{
-                    "scene": 3,
-                    "narration": "The third part, building up the story.",
-                    "visual_idea": "Description of the visuals for the third scene."
-                }}
+                {{"scene": 1, "narration": "The first sentence of the script. This should be a strong hook.", "visual_idea": "A brief description of the visual content for this scene."}},
+                {{"scene": 2, "narration": "The second part of the script.", "visual_idea": "Description of the visuals for the second scene."}}
             ]
         }}
-        Ensure the script is concise and suitable for a short-form video (e.g., under 60 seconds).
         """
         try:
-            response = await gemini_client.generate_content_async(prompt)
-            # Clean up the response to get only the JSON part
-            json_text = response.text.strip().replace("```json", "").replace("```", "").strip()
+            # Correct way to call the synchronous 'google-genai' library in an async function
+            response_text = await asyncio.to_thread(
+                gemini_client.generate_text,
+                prompt=prompt,
+                model="models/gemini-1.5-pro-latest" # Using full model name
+            )
+            json_text = response_text.strip().replace("```json", "").replace("```", "").strip()
             return json.loads(json_text)
         except Exception as e:
             logger.error(f"Error in Gemini script generation: {e}")
@@ -184,7 +166,7 @@ class CreativeEngine:
 class NarrationEngine:
     """Role: Edge-TTS - The Voice"""
     @staticmethod
-    async def generate_audio(text: str, output_path: Path, voice: str = "en-US-JasonNeural"):
+async def generate_audio(text: str, output_path: Path, voice: str = "en-US-JasonNeural"):
         logger.info(f"Generating audio for text, saving to {output_path}")
         communicate = edge_tts.Communicate(text, voice)
         await communicate.save(str(output_path))
@@ -200,16 +182,15 @@ class VideoEngine:
         try:
             (
                 ffmpeg
-                .input(image_path, loop=1, t=duration)
+                .input(image_path, loop=1, t=duration, framerate=30)
                 .input(audio_path)
-                .output(str(output_path), vcodec='libx264', acodec='aac', pix_fmt='yuv420p', shortest=None, r=30)
+                .output(str(output_path), vcodec='libx264', acodec='aac', pix_fmt='yuv420p', shortest=None)
                 .overwrite_output()
                 .run(capture_stdout=True, capture_stderr=True)
             )
             logger.info(f"Video compiled successfully: {output_path}")
         except ffmpeg.Error as e:
-            logger.error("FFMPEG Error:")
-            logger.error(e.stderr.decode())
+            logger.error(f"FFMPEG Error: {e.stderr.decode()}")
             raise
 
 
@@ -222,25 +203,19 @@ async def background_video_generation(task_id: str, topic: str, language: str, s
     temp_dir = Path(tempfile.mkdtemp())
     
     try:
-        # 1. Generate Script
         script_data = await CreativeEngine.generate_script(topic, language, style)
         full_narration = " ".join([scene["narration"] for scene in script_data["script"]])
         
         generation_status[task_id].update({"progress": 30, "message": "Generating audio narration..."})
 
-        # 2. Generate Audio
         audio_path = temp_dir / f"{base_filename}.mp3"
         await NarrationEngine.generate_audio(full_narration, audio_path)
         
-        # Get audio duration for video length
         probe = ffmpeg.probe(str(audio_path))
         audio_duration = float(probe['format']['duration'])
 
         generation_status[task_id].update({"progress": 60, "message": "Generating visuals (using placeholder)..."})
 
-        # 3. Generate Visuals (Placeholder: using a static background image)
-        # In a real app, you would generate an image with DALL-E/Gemini using script_data["thumbnail_prompt"]
-        # or find stock videos. For now, we copy a placeholder.
         placeholder_image = BASE_DIR / "static/placeholder.png"
         if not placeholder_image.exists():
              raise FileNotFoundError("Please create a 'static/placeholder.png' image file.")
@@ -249,11 +224,9 @@ async def background_video_generation(task_id: str, topic: str, language: str, s
 
         generation_status[task_id].update({"progress": 80, "message": "Compiling final video..."})
         
-        # 4. Compile Video
         final_video_path = OUTPUT_DIR / f"{base_filename}.mp4"
         VideoEngine.compile_video(audio_path, visual_path, final_video_path, audio_duration)
 
-        # 5. Finalize
         final_url = f"/static/outputs/{base_filename}.mp4"
         generation_status[task_id] = {"status": "completed", "progress": 100, "url": final_url, "title": script_data.get("title")}
 
@@ -261,7 +234,6 @@ async def background_video_generation(task_id: str, topic: str, language: str, s
         logger.error(f"Error in background task {task_id}: {e}")
         generation_status[task_id] = {"status": "failed", "progress": 100, "message": str(e)}
     finally:
-        # Clean up temporary directory
         shutil.rmtree(temp_dir)
 
 
@@ -269,7 +241,6 @@ async def background_video_generation(task_id: str, topic: str, language: str, s
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    # Redirect to dashboard if logged in, otherwise show landing page
     if await get_current_user(request):
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
     
@@ -290,13 +261,9 @@ async def send_otp(identifier: str = Form(...)):
         raise HTTPException(status_code=429, detail="Too many failed attempts. Please try again later.")
 
     otp = str(random.randint(100000, 999999))
-    otp_db[identifier] = {
-        "otp": otp,
-        "expires": datetime.now(timezone.utc) + timedelta(minutes=5)
-    }
+    otp_db[identifier] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
     
-    # In a real app, you would send this OTP via SMS or Email
-    logger.info(f"Generated OTP for {identifier}: {otp}") # For debugging
+    logger.info(f"Generated OTP for {identifier}: {otp}")
     
     return {"message": f"OTP sent to {identifier}. For testing, the OTP is {otp}."}
 
@@ -316,24 +283,21 @@ async def verify_otp(response: Response, identifier: str = Form(...), otp: str =
             user["lockout_until"] = datetime.now(timezone.utc) + timedelta(minutes=15)
         raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
 
-    # OTP is correct, reset failed attempts and create token
     user["failed_otp"] = 0
     user["lockout_until"] = None
     del otp_db[identifier]
     
     access_token = create_access_token(data={"sub": identifier})
-    response.set_cookie(
-        key="access_token", 
-        value=f"Bearer {access_token}", 
-        httponly=True,
-        samesite="lax",
-        secure=False # Set to True in production with HTTPS
-    )
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True, samesite="lax")
     return {"message": "Login successful."}
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user: dict = Depends(get_current_active_user)):
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
+
+@app.get("/create-video", response_class=HTMLResponse)
+async def create_video_page(request: Request, user: dict = Depends(get_current_active_user)):
+    return templates.TemplateResponse("create-video.html", {"request": request, "user": user})
 
 @app.post("/api/generate-video")
 async def generate_video_endpoint(
@@ -354,7 +318,6 @@ async def generate_video_endpoint(
 async def get_status(task_id: str, user: dict = Depends(get_current_active_user)):
     if task_id not in generation_status:
         raise HTTPException(status_code=404, detail="Task not found.")
-    # Basic security check: ensure user is asking for their own task
     if not task_id.startswith(user['id']):
         raise HTTPException(status_code=403, detail="Forbidden.")
     return JSONResponse(content=generation_status[task_id])
@@ -363,4 +326,3 @@ async def get_status(task_id: str, user: dict = Depends(get_current_active_user)
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return RedirectResponse(url="/", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
- 
