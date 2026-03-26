@@ -7,14 +7,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        body { background-color: #020617; color: #e2e8f0; }
         .sidebar { transition: all 0.3s ease; }
         .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
-        .dark body { background-color: #020617; color: #e2e8f0; }
-        input, textarea, select { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
-        .toggle-checkbox:checked { background-color: #3b82f6; }
-        .toggle-checkbox { appearance: none; width: 2.5rem; height: 1.25rem; background: #374151; border-radius: 9999px; position: relative; cursor: pointer; transition: background 0.2s; }
-        .toggle-checkbox::before { content: ''; position: absolute; width: 1rem; height: 1rem; background: white; border-radius: 50%; top: 0.125rem; left: 0.125rem; transition: transform 0.2s; }
-        .toggle-checkbox:checked::before { transform: translateX(1.25rem); }
+        input, textarea, select { 
+            background: rgba(255, 255, 255, 0.05) !important; 
+            border: 1px solid rgba(255,255,255,0.1) !important; 
+            color: white !important; 
+            border-radius: 0.75rem;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            --tw-ring-color: #3b82f6;
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        }
     </style>
 </head>
 <body class="min-h-screen flex">
@@ -26,14 +34,15 @@
             </h2>
         </div>
         <nav class="mt-4 px-4 space-y-2">
-            <a href="/dashboard" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/create-video" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600/10 text-blue-400"><i class="fas fa-plus"></i> Create Video</a>
-            <a href="/output" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-file-export"></i> Output/Export</a>
-            <a href="/analytics" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-chart-line"></i> Analytics</a>
-            {% if is_owner %}
-            <a href="/admin/users" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-users-cog"></i> User Management</a>
+            <a href="/dashboard" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-home w-5 text-center"></i> Dashboard</a>
+            <a href="/create-video" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600/20 text-blue-400 font-bold"><i class="fas fa-plus w-5 text-center"></i> Create Video</a>
+            <!-- Other links -->
+            {% if user.is_owner %}
+            <a href="/admin/users" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-users-cog w-5 text-center"></i> User Management</a>
             {% endif %}
-            <a href="/logout" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-red-400"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <div class="!mt-auto pt-4 border-t border-white/5">
+                <a href="/logout" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-red-400"><i class="fas fa-sign-out-alt w-5 text-center"></i> Logout</a>
+            </div>
         </nav>
     </aside>
 
@@ -45,398 +54,142 @@
         </header>
 
         <form id="video-form" class="space-y-8 pb-20">
-            <!-- Basic Info Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass-card p-6 rounded-3xl space-y-4">
-                    <h3 class="font-bold flex items-center gap-2"><i class="fas fa-info-circle text-blue-400"></i> Video Concept</h3>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Title (Emoji Support 🌟🔥)</label>
-                        <input type="text" id="title" class="w-full px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter video title...">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Topic / Idea</label>
-                        <textarea id="topic" rows="4" class="w-full px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="What is this video about?"></textarea>
-                    </div>
-                </div>
-
-                <div class="glass-card p-6 rounded-3xl space-y-4">
-                    <h3 class="font-bold flex items-center gap-2"><i class="fas fa-sliders-h text-purple-400"></i> Settings</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Language</label>
-                            <select id="language" class="w-full px-3 py-2 rounded-xl outline-none">
-                                <option value="hindi">Hindi</option>
-                                <option value="bhojpuri">Bhojpuri</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Video Count</label>
-                            <input type="number" id="video_count" value="1" min="1" max="1000" class="w-full px-3 py-2 rounded-xl outline-none">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-2">Duration</label>
-                        <div class="flex flex-wrap gap-3">
-                            <label class="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10">
-                                <input type="radio" name="duration" value="10" checked> <span class="text-sm">10s</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10">
-                                <input type="radio" name="duration" value="20"> <span class="text-sm">20s</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10">
-                                <input type="radio" name="duration" value="30"> <span class="text-sm">30s</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10">
-                                <input type="radio" name="duration" value="60"> <span class="text-sm">60s</span>
-                            </label>
-                            <div class="flex items-center gap-2 ml-2">
-                                <span class="text-xs text-gray-500">Custom:</span>
-                                <input type="text" placeholder="e.g. 5m" class="w-16 px-2 py-1 text-xs rounded-lg">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Selectors Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-card p-6 rounded-3xl">
-                    <h4 class="text-sm font-bold mb-3">Format</h4>
-                    <div class="space-y-2">
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">9:16 (Reels/Shorts)</span>
-                            <input type="radio" name="format" value="9:16" checked>
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">16:9 (YouTube)</span>
-                            <input type="radio" name="format" value="16:9">
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">1:1 (Square)</span>
-                            <input type="radio" name="format" value="1:1">
-                        </label>
-                    </div>
-                </div>
-
-                <div class="glass-card p-6 rounded-3xl">
-                    <h4 class="text-sm font-bold mb-3">Style</h4>
-                    <div class="space-y-2">
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Realistic</span>
-                            <input type="radio" name="style" value="realistic" checked>
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Cinematic</span>
-                            <input type="radio" name="style" value="cinematic">
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Story Style</span>
-                            <input type="radio" name="style" value="story">
-                        </label>
-                    </div>
-                </div>
-
-                <div class="glass-card p-6 rounded-3xl">
-                    <h4 class="text-sm font-bold mb-3">Text Position</h4>
-                    <div class="space-y-2">
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Top</span>
-                            <input type="radio" name="text_pos" value="top">
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Center</span>
-                            <input type="radio" name="text_pos" value="center" checked>
-                        </label>
-                        <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                            <span class="text-sm">Bottom</span>
-                            <input type="radio" name="text_pos" value="bottom">
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toggles & Scheduling -->
-            <div class="glass-card p-6 rounded-3xl">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="font-bold text-sm">Watermark</p>
-                            <p class="text-[10px] text-gray-500">2-layer system protection</p>
-                        </div>
-                        <input type="checkbox" class="toggle-checkbox" id="watermark" checked>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="font-bold text-sm">Drive Upload</p>
-                            <p class="text-[10px] text-gray-500">Direct to cloud folder</p>
-                        </div>
-                        <input type="checkbox" class="toggle-checkbox" id="drive_upload">
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="font-bold text-sm">Auto Upload</p>
-                            <p class="text-[10px] text-gray-500">Schedule & Publish</p>
-                        </div>
-                        <input type="checkbox" class="toggle-checkbox" id="auto_upload" onchange="toggleSchedulingPanel()">
-                    </div>
-                </div>
-                                <!-- Scheduling Panel -->
-                <div id="scheduling-panel" class="hidden border-t border-white/5 pt-6 animate-pulse-once">
-                    <h4 class="text-sm font-bold mb-4 text-blue-400">Auto Upload & Scheduling Panel</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <p class="text-xs text-gray-400 mb-2">Platforms</p>
-                            <div class="flex gap-4">
-                                <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="rounded"> YouTube</label>
-                                <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="rounded"> Instagram</label>
-                                <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="rounded"> FB</label>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Upload Date</label>
-                            <input type="date" class="w-full p-2 rounded-lg text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Upload Time</label>
-                            <input type="time" class="w-full p-2 rounded-lg text-sm">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Character Panel -->
-            <div class="glass-card p-6 rounded-3xl">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold flex items-center gap-2"><i class="fas fa-users text-emerald-400"></i> Character Panel</h3>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="autoAssignVoices()" class="text-xs bg-purple-600/20 text-purple-400 px-3 py-1 rounded-lg border border-purple-500/30 hover:bg-purple-600/30 transition-all">
-                            <i class="fas fa-magic"></i> Voice Auto Assign
-                        </button>
-                        <button type="button" onclick="addCharacter()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-all">
-                            <i class="fas fa-plus"></i> Add Character (Max 10)
-                        </button>
-                    </div>
-                </div>
-                <div id="character-list" class="space-y-3">
-                    <!-- Characters added dynamically -->
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="fixed bottom-0 left-64 right-0 glass-card border-t p-4 flex justify-between items-center z-30">
-                <div class="flex gap-2">
-                    <button type="button" onclick="resetForm()" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-xl text-sm transition-all">Reset</button>
-                    <button type="button" class="bg-red-900/40 text-red-400 border border-red-500/30 hover:bg-red-900/60 px-4 py-2 rounded-xl text-sm transition-all">Delete Selected</button>
-                </div>
+            <!-- Main Form Section -->
+            <div class="glass-card p-8 rounded-3xl space-y-6">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-info-circle text-blue-400"></i> Video Details</h3>
                 
-                <div class="flex gap-3">
-                    <button type="button" onclick="generateScript()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 px-6 py-2 rounded-xl font-bold transition-all">Generate Script</button>
-                    <button type="button" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 px-6 py-2 rounded-xl font-bold transition-all">Express Trailer</button>
-                    <button type="button" onclick="startGeneration()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all">Generate Video</button>
-                    <button type="button" class="bg-white text-black px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition-all">Add to Queue</button>
+                <div>
+                    <label for="topic" class="block text-sm font-medium text-gray-300 mb-2">Video Topic / Idea</label>
+                    <textarea id="topic" name="topic" rows="3" class="w-full px-4 py-2" placeholder="What is this video about? e.g., 'The history of black holes'"></textarea>
                 </div>
-            </div>
 
-            <!-- AI Output Section (Hidden until generated) -->
-            <div id="ai-output" class="hidden glass-card p-6 rounded-3xl space-y-6">
-                <h3 class="font-bold flex items-center gap-2 text-yellow-400"><i class="fas fa-bolt"></i> AI Script Engine Output</h3>
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <label class="text-[10px] uppercase text-blue-400 font-bold">Hook (0-3s)</label>
-                            <p id="hook-text" class="text-sm mt-1">Hook will appear here...</p>
-                        </div>
-                        <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <label class="text-[10px] uppercase text-purple-400 font-bold">Story</label>
-                            <p id="story-text" class="text-sm mt-1">Full story content...</p>
-                        </div>
-                        <div class="flex gap-4">
-                            <div class="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
-                                <label class="text-[10px] uppercase text-pink-400 font-bold">Emotion</label>
-                                <p class="text-sm">Excitement</p>
-                            </div>
-                            <div class="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
-                                <label class="text-[10px] uppercase text-orange-400 font-bold">Climax</label>
-                                <p class="text-sm">Final Reveal</p>
-                            </div>
-                        </div>
+                    <div>
+                        <label for="language" class="block text-sm font-medium text-gray-300 mb-2">Narration Language</label>
+                        <select id="language" name="language" class="w-full px-3 py-3">
+                            <option value="en-US">English (US)</option>
+                            <option value="hi-IN">Hindi (India)</option>
+                            <option value="en-IN">English (India)</option>
+                            <option value="es-ES">Spanish</option>
+                            <option value="fr-FR">French</option>
+                        </select>
                     </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">AI Generated Title</label>
-                            <input type="text" value="🔥 Super Cool Video 🌟" class="w-full px-3 py-2 rounded-xl text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Tags (Editable)</label>
-                            <textarea rows="2" class="w-full px-3 py-2 rounded-xl text-sm">#ai #video #automation #viral</textarea>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">SEO Keywords</label>
-                            <textarea rows="2" class="w-full px-3 py-2 rounded-xl text-sm">ai video, automated content, tech reels</textarea>
-                        </div>
+                    <div>
+                        <label for="style" class="block text-sm font-medium text-gray-300 mb-2">Video Style</label>
+                        <select id="style" name="style" class="w-full px-3 py-3">
+                            <option value="informative">Informative</option>
+                            <option value="storytelling">Storytelling</option>
+                            <option value="funny">Funny</option>
+                            <option value="inspirational">Inspirational</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Queue Status -->
-            <div id="queue-status" class="glass-card p-6 rounded-3xl border-l-4 border-blue-500">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold">Queue Status</h3>
-                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Idle</span>
-                </div>
-                <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                    <div class="bg-blue-500 h-full w-0 transition-all duration-1000" id="progress-bar"></div>
-                </div>
-                <p class="text-[10px] text-gray-500 mt-2">Ready to start new generation. Previous assets will be auto-deleted.</p>
+            <!-- Submit Button -->
+            <div class="flex justify-end">
+                <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center gap-2">
+                    <i class="fas fa-magic"></i> Generate Video
+                </button>
             </div>
         </form>
+
+        <!-- Status & Result Section -->
+        <div id="status-container" class="hidden mt-8 glass-card p-6 rounded-3xl">
+            <h3 class="font-bold mb-4">Generation Progress</h3>
+            <div id="status-message" class="text-gray-400"></div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 mt-4">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="result-link" class="mt-4"></div>
+        </div>
     </main>
 
-    <script>
-        let charCount = 0;
-        let statusInterval = null;
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const videoForm = document.getElementById('video-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusContainer = document.getElementById('status-container');
+    const statusMessage = document.getElementById('status-message');
+    const progressBar = document.getElementById('progress-bar');
+    const resultLink = document.getElementById('result-link');
 
-        function pollStatus() {
-            if(statusInterval) clearInterval(statusInterval);
-            const statusBox = document.getElementById('queue-status');
-            const progress = document.getElementById('progress-bar');
-            const statusText = statusBox.querySelector('span');
-
-            statusInterval = setInterval(async () => {
-                try {
-                    const res = await fetch('/api/generation-status');
-                    const data = await res.json();
-                    
-                    progress.style.width = data.progress + '%';
-                    statusText.innerText = data.status;
-                    
-                    if(data.progress >= 100) {
-                        clearInterval(statusInterval);
-                        statusText.className = 'text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded';
-                        if(confirm('Generation Complete! View Output?')) {
-                            window.location.href = '/output';
-                        }
-                    } else if (data.status.includes('Failed')) {
-                        clearInterval(statusInterval);
-                        statusText.className = 'text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded';
-                    } else {
-                        statusText.className = 'text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded';
-                    }
-                } catch(e) { console.error("Status check failed"); }
-            }, 2000);
+    videoForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const topic = document.getElementById('topic').value.trim();
+        if (!topic) {
+            alert('Please enter a video topic.');
+            return;
         }
 
-        function addCharacter() {
-            if(charCount >= 10) return alert('Max 10 characters allowed');
-            charCount++;
-            const list = document.getElementById('character-list');
-            const div = document.createElement('div');
-            div.className = 'grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 relative group';
-            div.id = `char-${charCount}`;
-            div.innerHTML = `
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px] text-gray-400">Name</label>
-                    <input type="text" placeholder="Character Name" class="p-2 rounded-lg text-xs outline-none">
-                </div>
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px] text-gray-400">Type</label>
-                    <select class="p-2 rounded-lg text-xs outline-none">
-                        <option>Hero</option>
-                        <option>Child</option>
-                        <option>Villain</option>
-                        <option>Female</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-                <div class="flex items-end pb-1 gap-2">
-                    <button type="button" class="flex-1 bg-white/10 hover:bg-white/20 p-2 rounded-lg text-xs transition-all"><i class="fas fa-play text-[10px] mr-1"></i> Preview Voice</button>
-                    <button type="button" onclick="removeChar('char-${charCount}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg text-xs transition-all"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            list.appendChild(div);
-        }
+        // Reset UI
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        statusContainer.classList.remove('hidden');
+        statusMessage.textContent = 'Initializing...';
+        progressBar.style.width = '0%';
+        resultLink.innerHTML = '';
 
-        function removeChar(id) {
-            document.getElementById(id).remove();
-            charCount--;
-        }
+        try {
+            const formData = new FormData(videoForm);
+            const response = await fetch('/api/generate-video', {
+                method: 'POST',
+                body: formData
+            });
 
-        function toggleSchedulingPanel() {
-            const panel = document.getElementById('scheduling-panel');
-            panel.classList.toggle('hidden', !document.getElementById('auto_upload').checked);
-        }
-
-        function resetForm() {
-            if(confirm('Clear all fields?')) {
-                document.getElementById('video-form').reset();
-                document.getElementById('character-list').innerHTML = '';
-                charCount = 0;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to start generation.');
             }
+
+            const data = await response.json();
+            pollStatus(data.task_id);
+
+        } catch (error) {
+            statusMessage.textContent = `Error: ${error.message}`;
+            statusMessage.classList.add('text-red-400');
+            resetSubmitButton();
         }
+    });
 
-        async function generateScript() {
-            const output = document.getElementById('ai-output');
-            const topic = document.getElementById('topic').value;
-            const language = document.getElementById('language').value;
-            const style = document.querySelector('input[name="style"]:checked').value;
-            
-            if(!topic) return alert('Enter a topic first');
-            
-            output.classList.remove('hidden');
-            document.getElementById('hook-text').innerHTML = `<i class="fas fa-brain animate-pulse mr-2"></i> Using Gemini 1.5 Pro for creative script generation...`;
-            output.scrollIntoView({ behavior: 'smooth' });
-            
-            const formData = new FormData();
-            formData.append('topic', topic);
-            formData.append('language', language);
-            formData.append('style', style);
-                      try {
-                const res = await fetch('/api/preview-script', { method: 'POST', body: formData });
-                const data = await res.json();
-                if(data.status === 'success' && data.ai_output) {
-                    document.getElementById('hook-text').innerText = data.ai_output.hook || "No hook generated.";
-                    document.getElementById('story-text').innerText = data.ai_output.story || "No story generated.";
-                } else {
-                    alert('Error: ' + (data.detail || 'Failed to generate script'));
-                }
-            } catch(e) {
-                alert('Creative Engine is busy or API keys are missing. Please check your .env file.');
-            }
-        }
-
-        async function startGeneration() {
-            const title = document.getElementById('title').value;
-            const topic = document.getElementById('topic').value;
-            const language = document.getElementById('language').value;
-            const style = document.querySelector('input[name="style"]:checked').value;
-
-            if(!title || !topic) return alert('Title and Topic are required');
-
-            const formData = new FormData();
-            formData.append('title', title);
-            formData.append('topic', topic);
-            formData.append('language', language);
-            formData.append('style', style);
-
+    function pollStatus(taskId) {
+        const interval = setInterval(async () => {
             try {
-                const res = await fetch('/api/generate-video', { method: 'POST', body: formData });
-                if(res.ok) {
-                    pollStatus();
-                } else {
-                    const data = await res.json();
-                    alert('Error: ' + data.detail);
-                }
-            } catch(e) { 
-                alert('Generation pipeline failed to start');
-            }
-        }
+                const response = await fetch(`/api/generation-status/${taskId}`);
+                if (!response.ok) throw new Error('Could not get status.');
+                
+                const data = await response.json();
 
-        function autoAssignVoices() {
-            alert('AI is automatically assigning unique voices to all characters based on type...');
-        }
-    </script>
+                statusMessage.textContent = `Status: ${data.message}`;
+                progressBar.style.width = `${data.progress}%`;
+
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    statusMessage.textContent = 'Video generation completed successfully!';
+                    resultLink.innerHTML = `<a href="${data.url}" target="_blank" class="text-blue-400 font-bold hover:underline">Download Your Video</a>`;
+                    resetSubmitButton();
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    statusMessage.textContent = `Generation failed: ${data.message}`;
+                    statusMessage.classList.add('text-red-400');
+                    resetSubmitButton();
+                }
+            } catch (error) {
+                clearInterval(interval);
+                statusMessage.textContent = `Error polling status: ${error.message}`;
+                statusMessage.classList.add('text-red-400');
+                resetSubmitButton();
+            }
+        }, 3000); // Poll every 3 seconds
+    }
+
+    function resetSubmitButton() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Video';
+    }
+});
+</script>
+
 </body>
 </html>
