@@ -7,30 +7,53 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        body { transition: background-color 0.3s, color 0.3s; }
         .sidebar { transition: all 0.3s ease; }
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(8px); 
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        /* Dark Mode */
         .dark body { background-color: #020617; color: #e2e8f0; }
-        .light body { background-color: #f8fafc; color: #1e293b; }
-        .light .glass-card { background: white; border: 1px solid #e2e8f0; color: #1e293b; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dark .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.05); }
+        .dark .sidebar { background: rgba(2, 6, 23, 0.5); }
+        .dark input { color: #e2e8f0; }
+
+        /* Light Mode */
+        .light body { background-color: #f1f5f9; color: #1e293b; }
+        .light .glass-card { background: rgba(255, 255, 255, 0.7); border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .light .sidebar { background: rgba(255, 255, 255, 0.5); }
+        .light input { color: #1e293b; }
+        .light .text-gray-400 { color: #64748b; }
+        .light .text-gray-500 { color: #475569; }
+        .light .hover\:bg-gray-500\/10:hover { background-color: rgba(0,0,0,0.05); }
     </style>
 </head>
 <body class="min-h-screen flex">
     <!-- Sidebar -->
-    <aside class="w-64 sidebar glass-card border-r fixed h-full z-20">
+    <aside class="w-64 sidebar border-r fixed h-full z-20">
         <div class="p-6">
             <h2 class="text-xl font-bold flex items-center gap-2">
                 <i class="fas fa-robot text-blue-500"></i> AI Factory
             </h2>
         </div>
         <nav class="mt-4 px-4 space-y-2">
-            <a href="/dashboard" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600/10 text-blue-400"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/create-video" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-plus"></i> Create Video</a>
-            <a href="/output" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-file-export"></i> Output/Export</a>
-            <a href="/analytics" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-chart-line"></i> Analytics</a>
-            {% if is_owner %}
-            <a href="/admin/users" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-users-cog"></i> User Management</a>
+            <a href="/dashboard" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600/20 text-blue-400 font-bold"><i class="fas fa-home w-5 text-center"></i> Dashboard</a>
+            <!-- In a real app, you would create these pages -->
+            <!-- <a href="/create-video" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-plus w-5 text-center"></i> Create Video</a> -->
+            <!-- <a href="/output" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-file-export w-5 text-center"></i> Output/Export</a> -->
+            <!-- <a href="/analytics" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-chart-line w-5 text-center"></i> Analytics</a> -->
+            
+            {% if user.is_owner %}
+            <a href="/admin/users" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-500/10"><i class="fas fa-users-cog w-5 text-center"></i> User Management</a>
             {% endif %}
-            <a href="/logout" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-red-400"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            
+            <div class="!mt-auto pt-4 border-t border-white/5">
+                 <a href="/logout" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-red-400"><i class="fas fa-sign-out-alt w-5 text-center"></i> Logout</a>
+            </div>
         </nav>
     </aside>
 
@@ -43,10 +66,9 @@
                 <p class="text-gray-500 text-sm">Active Session: {{ user.id }}</p>
             </div>
             
-            <div class="flex items-center gap-4 bg-gray-500/10 p-1 rounded-2xl border border-gray-500/20">
-                <button onclick="setTheme('light')" class="px-4 py-2 rounded-xl hover:bg-white hover:text-black transition-all"><i class="fas fa-sun"></i></button>
-                <button onclick="setTheme('dark')" class="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-lg"><i class="fas fa-moon"></i></button>
-                <button onclick="setTheme('auto')" class="px-4 py-2 rounded-xl hover:bg-blue-500/20"><i class="fas fa-magic"></i> Auto</button>
+            <div id="theme-switcher" class="flex items-center gap-2 bg-gray-500/10 p-1 rounded-2xl border border-gray-500/20">
+                <button data-theme="light" class="px-4 py-2 rounded-xl transition-all"><i class="fas fa-sun"></i></button>
+                <button data-theme="dark" class="px-4 py-2 rounded-xl transition-all"><i class="fas fa-moon"></i></button>
             </div>
         </header>
 
@@ -55,133 +77,194 @@
             <div class="lg:col-span-2 space-y-6">
                 <div class="glass-card p-6 rounded-3xl relative overflow-hidden">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold flex items-center gap-2"><i class="fas fa-comment-dots text-purple-400"></i> AI Assistant</h3>
-                        <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg">Online: Gemini 1.5 Pro</span>
+                        <h3 class="font-bold flex items-center gap-2"><i class="fas fa-comment-dots text-purple-400"></i> AI Video Generator</h3>
+                        <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg">Online</span>
                     </div>
-                    <div id="ai-chat" class="h-48 overflow-y-auto mb-4 text-sm space-y-2 text-gray-400">
-                        <p>Hello! Type a command like "Video bana do" or "Dark mode on".</p>
+                    <div id="ai-chat" class="h-48 overflow-y-auto mb-4 text-sm space-y-3 text-gray-400 pr-2">
+                        <p class="p-3 bg-gray-500/10 rounded-xl">Hello! Enter a topic below to generate a video. For example: "The history of the internet".</p>
                     </div>
                     <div class="flex gap-2">
-                        <input type="text" id="ai-input" placeholder="Type command here..." class="flex-1 bg-gray-500/10 border border-gray-500/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <button onclick="processCommand()" class="bg-purple-600 hover:bg-purple-700 px-6 rounded-xl transition-all"><i class="fas fa-paper-plane"></i></button>
+                        <input type="text" id="ai-input" placeholder="Enter video topic..." class="flex-1 bg-gray-500/10 border border-gray-500/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <button id="send-btn" class="bg-purple-600 hover:bg-purple-700 px-6 rounded-xl transition-all"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
 
                 <!-- Stats -->
                 <div class="grid grid-cols-2 gap-4">
                     <div class="glass-card p-6 rounded-3xl">
-                        <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Total Generated</p>
-                        <h4 class="text-3xl font-bold">1,284</h4>
+                        <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Total Videos</p>
+                        <h4 class="text-3xl font-bold">0</h4>
                     </div>
                     <div class="glass-card p-6 rounded-3xl">
-                        <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Jobs in Queue</p>
-                        <h4 class="text-3xl font-bold text-blue-500">12</h4>
-                    </div>
-                </div>
-
-                <!-- Manual Controls -->
-                <div class="glass-card p-6 rounded-3xl grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <button class="p-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-bold text-sm flex flex-col items-center gap-2">
-                        <i class="fas fa-film text-xl"></i> Generate Video
-                    </button>
-                    <button class="p-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold text-sm flex flex-col items-center gap-2">
-                        <i class="fas fa-bolt text-xl"></i> Express Trailer
-                    </button>
-                    <div class="flex flex-col items-center justify-center glass-card rounded-2xl border-dashed border-2 p-2">
-                        <label class="text-xs mb-1">Auto Video</label>
-                        <input type="checkbox" class="w-10 h-5 bg-gray-700 rounded-full appearance-none checked:bg-blue-500 cursor-pointer transition-all relative after:content-[''] after:absolute after:w-4 after:h-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:translate-x-5">
+                        <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Storage Used</p>
+                        <h4 class="text-3xl font-bold">0 MB</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column Settings -->
-            <div class="space-y-6">
-                <div class="glass-card p-6 rounded-3xl">
-                    <h3 class="font-bold mb-4">System Controls</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm">Auto Mode (Smart)</span>
-                            <input type="checkbox" class="toggle-checkbox" id="auto-mode">
-                        </div>
-                        <button class="w-full py-2 border border-red-500/30 text-red-400 rounded-xl text-sm hover:bg-red-500/10">Reset All Settings</button>
-                    </div>
-                </div>
-
-                <div class="glass-card p-6 rounded-3xl">
-                    <h3 class="font-bold mb-4">Video Pipeline</h3>
-                    <div class="space-y-3">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs text-gray-500">Video Size</label>
-                            <select class="bg-gray-500/10 border border-gray-500/20 rounded-lg p-2 text-sm outline-none">
-                                <option>9:16 (Shorts/Reels)</option>
-                                <option>16:9 (YouTube)</option>
-                                <option>1:1 (Square)</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs text-gray-500">Video Count (1-1000)</label>
-                            <input type="number" value="1" min="1" max="1000" class="bg-gray-500/10 border border-gray-500/20 rounded-lg p-2 text-sm outline-none">
-                        </div>
-                        <div class="flex justify-between items-center pt-2">
-                            <span class="text-sm">Watermark</span>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm">Drive Auto-Upload</span>
-                            <input type="checkbox">
-                        </div>
-                    </div>
+            <!-- Recent Videos Panel -->
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-400"></i> Recent Videos</h3>
+                <div id="recent-videos" class="space-y-3 text-sm">
+                    <p class="text-gray-500">No videos generated yet.</p>
+                    <!-- Generated videos will appear here -->
                 </div>
             </div>
         </div>
     </main>
 
-    <script>
-        function setTheme(theme) {
-            document.documentElement.className = theme;
-            localStorage.setItem('theme', theme);
-            if(theme === 'auto') {
-                const hour = new Date().getHours();
-                document.documentElement.className = (hour > 6 && hour < 18) ? 'light' : 'dark';
-            }
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aiInput = document.getElementById('ai-input');
+    const sendBtn = document.getElementById('send-btn');
+    const aiChat = document.getElementById('ai-chat');
+    const recentVideosContainer = document.getElementById('recent-videos');
+
+    // --- Theme Switcher ---
+    const themeSwitcher = document.getElementById('theme-switcher');
+    const htmlEl = document.documentElement;
+
+    function applyTheme(theme) {
+        localStorage.setItem('theme', theme);
+        if (theme === 'light') {
+            htmlEl.classList.remove('dark');
+            htmlEl.classList.add('light');
+        } else {
+            htmlEl.classList.remove('light');
+            htmlEl.classList.add('dark');
         }
+        // Update button styles
+        themeSwitcher.querySelectorAll('button').forEach(btn => {
+            if (btn.dataset.theme === theme) {
+                btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+            }
+        });
+    }
 
-        async function processCommand() {
-            const input = document.getElementById('ai-input');
-            const chat = document.getElementById('ai-chat');
-            const cmd = input.value;
-            if(!cmd) return;
+    themeSwitcher.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (button) {
+            applyTheme(button.dataset.theme);
+        }
+    });
 
-            const p = document.createElement('p');
-            p.className = 'text-white border-l-2 border-purple-500 pl-2';
-            p.innerText = '> ' + cmd;
-            chat.appendChild(p);
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(savedTheme);
 
-            input.value = '';
+
+    // --- AI Video Generation ---
+    sendBtn.addEventListener('click', processCommand);
+    aiInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            processCommand();
+        }
+    });
+
+    function addChatMessage(message, type = 'ai') {
+        const p = document.createElement('p');
+        p.className = `p-3 rounded-xl ${type === 'user' ? 'bg-blue-500/10 text-right' : 'bg-gray-500/10'}`;
+        p.innerHTML = message; // Use innerHTML to render links
+        aiChat.appendChild(p);
+        aiChat.scrollTop = aiChat.scrollHeight;
+        return p;
+    }
+
+    async function processCommand() {
+        const topic = aiInput.value.trim();
+        if (!topic) return;
+
+        addChatMessage(topic, 'user');
+        aiInput.value = '';
+        sendBtn.disabled = true;
+        
+        const statusMsg = addChatMessage('Starting video generation...', 'ai');
+
+        try {
+            const formData = new FormData();
+            formData.append('topic', topic);
+
+            const response = await fetch('/api/generate-video', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to start generation.');
+            }
+
+            const data = await response.json();
+            const taskId = data.task_id;
+            statusMsg.innerHTML = 'Task started. Polling for status...';
             
-            try {
-                const formData = new FormData();
-                formData.append('command', cmd);
-                const res = await fetch('/api/ai-assistant', { method: 'POST', body: formData });
-                const data = await res.json();
-                
-                let resp = data.response_text;
-                
-                // Handle System Actions
-                if(data.intent === 'action') {
-                    if(cmd.toLowerCase().includes('dark')) setTheme('dark');
-                    if(cmd.toLowerCase().includes('light')) setTheme('light');
-                }
-                
-                const r = document.createElement('p');
-                r.className = 'text-purple-300';
-                r.innerHTML = `<span class="font-bold">[OpenAI Orchestrator]:</span> ${resp}`;
-                chat.appendChild(r);
-                chat.scrollTop = chat.scrollHeight;
-            } catch(e) {
-                console.error(e);
-            }
+            // Start polling
+            pollStatus(taskId, statusMsg);
+
+        } catch (error) {
+            statusMsg.innerHTML = `Error: ${error.message}`;
+            sendBtn.disabled = false;
         }
-    </script>
+    }
+
+    function pollStatus(taskId, statusElement) {
+        const interval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/generation-status/${taskId}`);
+                if (!response.ok) {
+                    throw new Error('Could not get status.');
+                }
+                const data = await response.json();
+
+                statusElement.innerHTML = `Status: ${data.status} (${data.progress}%) - ${data.message}`;
+
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    statusElement.innerHTML = `Video completed! <a href="${data.url}" target="_blank" class="text-blue-400 underline">Click here to watch</a>.`;
+                    addVideoToList(data.title, data.url);
+                    sendBtn.disabled = false;
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    statusElement.innerHTML = `Generation failed: ${data.message}`;
+                    statusElement.classList.add('text-red-400');
+                    sendBtn.disabled = false;
+                }
+            } catch (error) {
+                clearInterval(interval);
+                statusElement.innerHTML = `Error polling status: ${error.message}`;
+                sendBtn.disabled = false;
+            }
+        }, 3000); // Poll every 3 seconds
+    }
+
+    function addVideoToList(title, url) {
+        // Remove "No videos" message if it exists
+        if (recentVideosContainer.querySelector('p')) {
+            recentVideosContainer.innerHTML = '';
+        }
+
+        const videoDiv = document.createElement('div');
+        videoDiv.className = 'p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = title || 'Untitled Video';
+        titleSpan.className = 'truncate pr-2';
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.className = 'text-blue-400 hover:underline';
+        link.innerHTML = '<i class="fas fa-download"></i>';
+
+        videoDiv.appendChild(titleSpan);
+        videoDiv.appendChild(link);
+
+        recentVideosContainer.prepend(videoDiv);
+    }
+});
+</script>
+
 </body>
-  </html>
+</html>
