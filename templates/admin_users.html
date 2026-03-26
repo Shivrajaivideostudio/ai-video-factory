@@ -35,7 +35,9 @@
                             <tr>
                                 <td class="p-4">
                                     <div class="font-medium">{{ uid }}</div>
-                                    {% if data.is_owner %}<span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Owner</span>{% endif %}
+                                    {% if data.is_owner %}
+                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Owner</span>
+                                    {% endif %}
                                 </td>
                                 <td class="p-4">
                                     <span class="px-3 py-1 rounded-full text-xs font-bold
@@ -47,8 +49,12 @@
                                     </span>
                                 </td>
                                 <td class="p-4 text-right space-x-2">
+                                    {% if not data.is_owner %}
                                     <form action="/api/admin/update-user" method="POST" class="inline">
+                                        <!-- Security Token: CSRF token ko yahan add karein -->
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="identifier" value="{{ uid }}">
+                                        
                                         {% if data.status == 'pending' %}
                                             <button name="action" value="approve" class="text-green-500 hover:bg-green-500/10 p-2 rounded">Approve</button>
                                         {% endif %}
@@ -63,6 +69,9 @@
                                             <i class="fas fa-ban"></i>
                                         </button>
                                     </form>
+                                    {% else %}
+                                    <span class="text-gray-500 text-sm">No actions available</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
